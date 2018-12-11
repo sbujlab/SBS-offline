@@ -37,5 +37,6 @@
 #pragma link C++ class SBSAdcHit+;
 #pragma link C++ class SBSScintPartialHit+;
 #pragma link C++ class SBSScintPlane+;
+
 //#pragma link C++ defined_in "SBSSimFadc250Module.h";
 #endif

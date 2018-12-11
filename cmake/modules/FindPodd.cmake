@@ -32,7 +32,7 @@ if(Podd_LIBRARY)
     find_path(_Podd_include_${Podd_filename}
       NAMES ${Podd_filename}
       PATHS ${Podd_path}
-      PATH_SUFFIXES hana_decode src
+      PATH_SUFFIXES hana_decode src include
       NO_DEFAULT_PATH
       )
     if(_Podd_include_${Podd_filename})
