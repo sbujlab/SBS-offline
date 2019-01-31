@@ -70,6 +70,10 @@ namespace Decoder {
 
       UInt_t data_count = 0;
 
+
+      // Variables for trigger times
+      Int_t trigger_time;
+
       //  v5 decoder
       
       int ii,jj,kk,ll;
@@ -80,13 +84,13 @@ namespace Decoder {
 
       while( jj < len ){
           thesewords = p[jj++] & 0xFFFFFF;
-          //printf("===============================================================================\n");
-          //printf("=    CRATE   %d   ======    SLOT   %d   =======================================\n", fCrate, fSlot);
-          //printf("BLOCK HEADER  %06x\n", thesewords);
-          //printf("Good? (0)       %x\n", (thesewords & 0xe00000) >> 21);
-          //printf("Module ID       %d\n", (thesewords & 0x1F0000) >> 16 );
-          //printf("EVENT_PER_BLOCK %d\n", (thesewords & 0x00FF00) >> 8 );
-          //printf("BLOCK COUNT     %d\n", (thesewords & 0x0000FF) >> 0);
+          // printf("===============================================================================\n");
+          // printf("=    CRATE   %d   ======    SLOT   %d   =======================================\n", fCrate, fSlot);
+          // printf("BLOCK HEADER  %06x\n", thesewords);
+          // printf("Good? (0)       %x\n", (thesewords & 0xe00000) >> 21);
+          // printf("Module ID       %d\n", (thesewords & 0x1F0000) >> 16 );
+          // printf("EVENT_PER_BLOCK %d\n", (thesewords & 0x00FF00) >> 8 );
+          // printf("BLOCK COUNT     %d\n", (thesewords & 0x0000FF) >> 0);
 
           if( (thesewords & 0xe00000) >> 21 != 0 ){
               fprintf(stderr, "[ERROR  MPDModule::LoadSlot, line %d] BLOCK HEADER NOT FOUND\n", __LINE__);
@@ -100,31 +104,48 @@ namespace Decoder {
           for( ii = 0; ii < nevent; ii++ ){
               thesewords = p[jj++] & 0xFFFFFF;
 
-              //printf("EVENT HEADER  %06x\n", thesewords);
-              //printf("Good? (4)       %x\n", (thesewords & 0xF00000) >> 20);
-              //printf("EVENT COUNT     %d\n", (thesewords & 0x0FFFFF) >> 0);
+              // printf("EVENT HEADER  %06x\n", thesewords);
+              // printf("Good? (4)       %x\n", (thesewords & 0xF00000) >> 20);
+              // printf("EVENT COUNT     %d\n", (thesewords & 0x0FFFFF) >> 0);
               if( (thesewords & 0xF00000) >> 20 != 0x4 ){
                   fprintf(stderr, "[ERROR  MPDModule::LoadSlot, line %d] EVENT HEADER NOT FOUND\n", __LINE__);
                   return -1;
               }
+	      
+	      Int_t event_num = (thesewords & 0x0FFFFF);
+	      Int_t effCh_evnum = (mpdID)<<4;
+	      status = sldat->loadData("adc",effCh_evnum,event_num,event_num);
+	      if( status != SD_OK ) return -1;
 
               thesewords = p[jj++] & 0xFFFFFF;
-              //printf("TRIGGER TIME 1%06x\n", thesewords);
-              //printf("Good? (6)       %x\n", (thesewords & 0xF00000) >> 20);
-              //printf("COURSE TIME     %d\n", (thesewords & 0x0FFFFF) >> 0);
+              // printf("TRIGGER TIME 1%06x\n", thesewords);
+              // printf("Good? (6)       %x\n", (thesewords & 0xF00000) >> 20);
+              // printf("COURSE TIME     %d\n", (thesewords & 0x0FFFFF) >> 0);
+	      
+	      trigger_time = (thesewords & 0x0FFFFF) >> 0;
+	      Int_t effCh_trigger  = (mpdID)<< 5;
+	      status = sldat->loadData("adc",effCh_trigger,trigger_time,trigger_time);
+	      if( status != SD_OK ) return -1;
+	      
               if( (thesewords & 0xF00000) >> 20 != 0x6 ){
                   fprintf(stderr, "[ERROR  MPDModule::LoadSlot, line %d] TRIGGER TIME 1 WORD NOT FOUND\n", __LINE__);
                   return -1;
               }
 
               thesewords = p[jj++] & 0xFFFFFF;
-              //printf("TRIGGER TIME 2%06x\n", thesewords);
-              //printf("Good? (7)       %x\n", (thesewords & 0xF00000) >> 20);
-              //printf("COURSE TIME     %d\n", (thesewords & 0x0FFFFF) >> 0);
+              // printf("TRIGGER TIME 2%06x\n", thesewords);
+              // printf("Good? (7)       %x\n", (thesewords & 0xF00000) >> 20);
+              // printf("COURSE TIME     %d\n", (thesewords & 0x0FFFFF) >> 0);
+	      
+	      trigger_time = (thesewords & 0x0FFFFF) >> 0;
+	      status = sldat->loadData("adc",effCh_trigger,trigger_time,trigger_time);
+	      if( status != SD_OK ) return -1;
+	      
               if( (thesewords & 0xF00000) >> 20 != 0x7 ){
                   fprintf(stderr, "[ERROR  MPDModule::LoadSlot, line %d] TRIGGER TIME 2 WORD NOT FOUND\n", __LINE__);
                   return -1;
               }
+
 
               kk = 0;
               while( ((p[jj] & 0xE00000) >> 21 ) == 0x4  ){
@@ -135,11 +156,11 @@ namespace Decoder {
 
                   adcCh = thesewords & 0x00000F;
 
-                  //printf("HEADER        %06x\n", thesewords);
-                  //printf("Headergood? (0) %x\n", (thesewords & 0x1C0000) >> 18);
-                  //printf("Baselineval     %x\n", (thesewords & 0x020000) >> 17);
-                  //printf("APV HEADER      %x\n", (thesewords & 0x01FFF0) >> 4);
-                  //printf("APV ID          %x\n", (thesewords & 0x00000F) >> 0);
+                  // printf("APV HEADER        %06x\n", thesewords);
+                  // printf("Headergood? (0) %x\n", (thesewords & 0x1C0000) >> 18);
+                  // printf("Baselineval     %x\n", (thesewords & 0x020000) >> 17);
+                  // printf("APV HEADER      %x\n", (thesewords & 0x01FFF0) >> 4);
+                  // printf("APV ID          %x\n", (thesewords & 0x00000F) >> 0);
                   if( (thesewords & 0x1C0000) >> 18 != 0x0 ){
                       fprintf(stderr, "[ERROR  MPDModule::LoadSlot, line %d] DATA HEADER NOT FOUND\n", __LINE__);
                       return -1;
@@ -195,10 +216,15 @@ namespace Decoder {
               //printf("[ %d SAMPLES ]\n", kk);
 
               thesewords = p[jj++] & 0xFFFFFF;
-              //printf("EVENT TRAILER %06x\n", thesewords);
-              //printf("Good? (a)       %x\n", (thesewords & 0xF00000) >> 20);
-              //printf("N WORDS IN EVT  %d\n", (thesewords & 0x0FFF00) >> 8);
-              //printf("FINE TRIGGER T  %d\n", (thesewords & 0x0000FF) >> 0);
+              // printf("EVENT TRAILER %06x\n", thesewords);
+              // printf("Good? (a)       %x\n", (thesewords & 0xF00000) >> 20);
+              // printf("N WORDS IN EVT  %d\n", (thesewords & 0x0FFF00) >> 8);
+              // printf("FINE TRIGGER T  %d\n", (thesewords & 0x0000FF) >> 0);
+	      
+	      trigger_time = (thesewords & 0x0000FF) >> 0;
+	      status = sldat->loadData("adc",effCh_trigger,trigger_time,trigger_time);
+	      if( status != SD_OK ) return -1;
+		
               if( (thesewords & 0xF00000) >> 20 != 0xa ){
                   fprintf(stderr, "[ERROR  MPDModule::LoadSlot, line %d] EVENT TRAILER NOT FOUND\n", __LINE__);
                   return -1;
